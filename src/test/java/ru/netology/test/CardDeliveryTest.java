@@ -1,5 +1,9 @@
 package ru.netology.test;
 
+import com.codeborne.selenide.logevents.SelenideLogger;
+import io.qameta.allure.selenide.AllureSelenide;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.openqa.selenium.Keys;
 import ru.netology.data.DataGenerator;
 import com.github.javafaker.Faker;
@@ -18,8 +22,22 @@ public class CardDeliveryTest {
 
     private Faker faker;
 
+    @BeforeAll
+
+    static void setUpAll(){
+        SelenideLogger.addListener("allure", new AllureSelenide());
+    }
+
+    @AfterAll
+
+    static void tearDownAll(){
+        SelenideLogger.removeListener("allure");
+    }
+
+
+
     @BeforeEach
-    void setUpAll() {
+    void setUp() {
         open("http://localhost:9999");
         faker = new Faker(new Locale("ru"));
     }
@@ -54,6 +72,22 @@ public class CardDeliveryTest {
                 .shouldBe(visible, Duration.ofSeconds(15)).shouldHave(text("Успешно!"));
         $("[data-test-id=success-notification] .notification__content")
                 .shouldBe(visible).shouldHave(exactText("Встреча успешно запланирована на " + secondMeetingDate));
+    }
+
+    @Test
+
+    public void shouldNotSubmitIfWrongCity(){
+
+        var validUser = DataGenerator.generateUser("ru");
+        var daysToAddForFirstMeeting = 3;
+        var firstMeetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] input").setValue("Moskwa");
+        $("[data-test-id=date] input").setValue(firstMeetingDate);
+        $("[data-test-id=name] input").setValue(validUser.getName());
+        $("[data-test-id=phone] input").setValue(validUser.getPhone());
+        $("[data-test-id=agreement]").click();
+        $(".button").click();
+        $(".input_invalid, .input__sub").shouldBe(visible).shouldHave(text("Доставка в выбранный город недоступна"));
     }
 
 }
